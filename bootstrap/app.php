@@ -30,13 +30,22 @@ $app = new Slim\App([
 		    'charset' => 'utf8',
 		    'collation' => 'utf8_unicode_ci',
 		    'prefix' => '',
+	    ],
+
+	    'image' => [
+	    	'cache' => [
+	    		'path' => base_path('storage/cache/image')
+		    ]
 	    ]
     ],
 ]);
 
 $container = $app->getContainer();
 $container['image'] = function ($container) {
-	return new ImageManager();
+	$manager = new ImageManager();
+	$manager->configure($container['settings']['image']);
+
+	return $manager;
 };
 
 $dbManager = new Manager();

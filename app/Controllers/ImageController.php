@@ -14,6 +14,9 @@ use Psr\Http\Message\{
 class ImageController extends Controller
 {
 	private $imageExtension = 'png';
+	private $maxSize = 800;
+	private $minSize = 10;
+	private $defaultSize = 100;
 
 	public function store(Request $request, Response $response, $args)
 	{
@@ -46,10 +49,27 @@ class ImageController extends Controller
 		}
 
 		$response->getBody()->write(
-			$this->c->image->make(uploads_path($image->uuid))->encode('png')
+			$this->getProcessedImage($request, $image)
 		);
 
 		return $this->respondWithHeaders($response);
+	}
+
+	protected function getProcessedImage(Request $request, Image $image)
+	{
+		return $this->c->image->cache(function ($builder) use ($request, $image) {
+			$this->processImage(
+				$request,
+				$builder->make(uploads_path($image->uuid))
+			);
+		});
+	}
+
+	protected function processImage(Request $request, $builder)
+	{
+		return $builder->resize(null, $this->getRequestedSize($request), function ($constraint) {
+			$constraint->aspectRatio();
+		})->encode('png');
 	}
 
 	protected function respondWithHeaders(Response $response)
@@ -67,4 +87,10 @@ class ImageController extends Controller
 			'Content-Type' => $this->imageExtension
 		];
 	}
+
+	protected function getRequestedSize(Request $request)
+	{
+		return max(min($request->getParam('s'), $this->maxSize)??$this->defaultSize, $this->minSize);
+	}
+
 }
