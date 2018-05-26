@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Database\Capsule\Manager;
+use Illuminate\Events\Dispatcher;
+use Intervention\Image\ImageManager;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
@@ -33,12 +35,16 @@ $app = new Slim\App([
 ]);
 
 $container = $app->getContainer();
+$container['image'] = function ($container) {
+	return new ImageManager();
+};
 
 $dbManager = new Manager();
 $dbManager->addConnection($container['settings']['database']);
+
+$dbManager->setEventDispatcher(new Dispatcher());
+
 $dbManager->setAsGlobal();
 $dbManager->bootEloquent();
 
-dump(\App\Models\Image::where('uuid', '550e8400-e29b-41d4-a716-446655440000')->first());
-exit;
 require_once __DIR__ . '/../routes/api.php';
